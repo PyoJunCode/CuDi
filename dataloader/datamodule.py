@@ -13,14 +13,12 @@ class CustomDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         if stage in (None, "fit"):
             self.train_data = ImageDataset(img_dir=self.base_dir, dir_info=self.dir_info["train_dir"], patch=True)
-            self.valid_data = ImageDataset(img_dir=self.base_dir, dir_info=self.dir_info["valid_dir"], max_len=15)
+            self.valid_data = ImageDataset(img_dir=self.base_dir, dir_info=self.dir_info["valid_dir"], scale=True, max_len=15)
                 
         
         if stage in (None, "test"):
-            if self.test_dir:
-                self.test_data = ImageDataset(img_dir=self.base_dir, dir_info=self.dir_info["test_dir"])
-            else:
-                print("No test_dir passed.")
+            self.test_data = ImageDataset(img_dir=self.base_dir, dir_info=self.dir_info["test_dir"])
+
 
         
     def train_dataloader(self):

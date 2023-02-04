@@ -12,7 +12,7 @@ from utils.img_utils import img2tensor
 from PIL import Image
 
 class ImageDataset(Dataset):
-    def __init__(self, img_dir, dir_info=None, patch=None, max_len=None):
+    def __init__(self, img_dir, dir_info=None, scale=True, patch=None, max_len=None):
         self.mean = (0.5, 0.5, 0.5)
         self.std = (0.5, 0.5, 0.5)
 
@@ -30,6 +30,7 @@ class ImageDataset(Dataset):
         self.train_low_data_names = noisy_files
         self.train_low_data_names.sort()      
 
+        self.scale = scale
         self.patch = False
         if patch:
             self.patch = True
@@ -40,22 +41,22 @@ class ImageDataset(Dataset):
 
     def load_images_transform(self, file):
         im = np.asarray(Image.open(file))
-        im = cv2.resize(im, (0,0), fx=0.5, fy=0.5, interpolation=cv2.INTER_CUBIC)
-        im_h, im_w, _ = im.shape
-        if self.patch:
-            patch=1024
-        
-            h_offset = random.randint(0, max(0, im_h - patch - 1))
-            w_offset = random.randint(0, max(0, im_w - patch - 1))
-            
-            im = im[h_offset:h_offset + patch, w_offset:w_offset + patch, :]
-    
-
+        if self.scale:
+            im = cv2.resize(im, (0,0), fx=0.5, fy=0.5, interpolation=cv2.INTER_LINEAR)
+        im = im / 255.0
+        img = img2tensor(im, bgr2rgb=True).cuda()
+        _, im_h, im_w = img.shape
         im_h = (im_h//8)*8
         im_w = (im_w//8)*8
-        im = im[:im_h, :im_w, :]
-        im = im / 255.0
-        img = img2tensor(im, bgr2rgb=False)
+        img = img[:, :im_h, :im_w]
+        if self.patch:
+            patch = 256
+
+            h_offset = random.randint(0, max(0, im_h - patch - 1))
+            w_offset = random.randint(0, max(0, im_w - patch - 1))
+
+            img = img[:, h_offset:h_offset + patch, w_offset:w_offset + patch]
+
         return img
         
     def __getitem__(self, index):
