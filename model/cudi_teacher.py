@@ -15,10 +15,12 @@ class TeacherModel(pl.LightningModule):
     def __init__(self, save_path=None, lr=1e-4):
         super().__init__()
         self.model = TeacherNetwork()
+        # Init model weight in normal distribution
+        self.model.init_weight()
         self.save_path = save_path
         
         self.lr = lr
-        
+
         # Losses
         # Self supervised spatial exposure control loss
         self.cri_sec = SpaExpLoss(loss_weight=10)
@@ -31,7 +33,7 @@ class TeacherModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, image_name = batch
-        x_map = get_random_expmap(x)
+        x_map = get_random_expmap(x, patch_size=16)
 
         x_concat = torch.cat((x, x_map), dim=1)
         
@@ -40,18 +42,11 @@ class TeacherModel(pl.LightningModule):
         
         # Forward
         res, r = self.model(x_concat)
-        res = (res + 1) / 2
-        res_map = get_expmap(res, s=0.25)
         
         # Losses
-        l_sec = torch.mean(self.cri_sec(res, x_map))
+        l_sec = self.cri_sec(res, x_map)
         l_total += l_sec
         losses["l_sec"] = l_sec
-        
-        # x = [0, 1], res = [-1, 1]
-        l_sc = self.cri_sc(x, res)
-        l_total += l_sc
-        losses["l_sc"] = l_sc
 
         l_cc = self.cri_cc(res)
         l_total += l_cc
@@ -60,6 +55,12 @@ class TeacherModel(pl.LightningModule):
         l_is = self.cri_is(r)
         l_total += l_is
         losses["l_is"] = l_is
+
+        # x = [0, 1], res = [-1, 1]
+        #res = (res + 1) / 2
+        l_sc = self.cri_sc(x, res)
+        l_total += l_sc
+        losses["l_sc"] = l_sc
         
         losses["l_total"] = l_total
         
@@ -84,7 +85,7 @@ class TeacherModel(pl.LightningModule):
                 # save_images(res_map, u_path)
                 u_name = f'{self.current_epoch}/{image_name}_res.png'
                 u_path = os.path.join(self.save_path, u_name)
-                save_images(res, u_path, min_max=(-1, 1))
+                save_images(res, u_path, min_max=(0, 1))
             
 
     def test_step(self, batch, batch_idx, dataloader_idx=0):
@@ -102,10 +103,13 @@ class TeacherModel(pl.LightningModule):
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         x, image_name = batch
         image_name = image_name[0].split('\\')[-1].split('.')[0]
-        res = self.model(x)
+        x_map = get_expmap(x, s=0.25)
+        x_concat = torch.cat((x, x_map), dim=1)
+        res, _ = self.model(x_concat)
+
         u_name = f'{self.current_epoch}/{image_name}_inference.png'
         u_path = os.path.join(self.save_path, u_name)
-        save_images(res, u_path)
+        save_images(res, u_path, min_max=(0, 1))
         
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)

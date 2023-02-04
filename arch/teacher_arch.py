@@ -7,7 +7,7 @@ class TeacherNetwork(nn.Module):
     def __init__(self):
         super().__init__()
 
-        #self.down = nn.MaxPool2d(2, stride=2, return_indices=False, ceil_mode=False)
+        self.down = nn.MaxPool2d(2, stride=2, return_indices=False, ceil_mode=False)
         
         self.conv1 = nn.Sequential(
             ConvBlock(4, 32, 3, activation="ReLU"),
@@ -50,16 +50,32 @@ class TeacherNetwork(nn.Module):
             ConvBlock(32, 32, 3, activation="ReLU"),
         )
         self.conv9 = ConvBlock(32, 24, 3, activation="Tanh")
+    
+    def _init_weight(self, block):
+        if isinstance(block, nn.Conv2d):
+            block.weight.data.normal_(mean=0., std=0.02)
+
+    def init_weight(self):
+        self.conv1.apply(self._init_weight)
+        self.conv2.apply(self._init_weight)
+        self.conv3.apply(self._init_weight)
+        self.conv4.apply(self._init_weight)
+        self.conv5.apply(self._init_weight)
+        self.conv6.apply(self._init_weight)
+        self.conv7.apply(self._init_weight)
+        self.conv8.apply(self._init_weight)
+        self.conv9.apply(self._init_weight)
+
 
     
     def forward(self, x):
 
         conv1_out = self.conv1(x)
-        conv1_out = F.interpolate(conv1_out, scale_factor=0.5, mode="bilinear")
+        conv1_out = self.down(conv1_out)
         conv2_out = self.conv2(conv1_out)
-        conv2_out = F.interpolate(conv2_out, scale_factor=0.5, mode="bilinear")
+        conv2_out = self.down(conv2_out)
         conv3_out = self.conv3(conv2_out)
-        conv3_out = F.interpolate(conv3_out, scale_factor=0.5, mode="bilinear")
+        conv3_out = self.down(conv3_out)
 
         conv4_out = self.conv4(conv3_out)
         conv5_out = self.conv5(conv4_out)
