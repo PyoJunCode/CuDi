@@ -172,6 +172,5 @@ poetry.toml
 
 # Custom
 tb_logs/
-*.pth
 *.ckpt
 lightning_logs

@@ -1,4 +1,4 @@
-from losses.losses import ColorLoss, SpaExpLoss, SpatialLoss, IlluSmoothLoss, L1Loss
+from losses.losses import ColorLoss, SpaExpLoss, SpatialLoss, IlluSmoothLoss, L1Loss, StudentLoss
 from losses.vgg_loss import PerceptualLoss
 __all__ = [
     "ColorLoss",
@@ -6,5 +6,6 @@ __all__ = [
     "SpatialLoss",
     "IlluSmoothLoss",
     "L1Loss",
+    "StudentLoss",
     "PerceptualLoss"
 ]

@@ -6,6 +6,7 @@ from torchvision.models.vgg import vgg16
 import numpy as np
 from kornia.losses import total_variation
 
+from arch.led_arch import LEDCurveNet
 
 class ColorLoss(nn.Module):
 
@@ -97,37 +98,6 @@ class SpaExpLoss(nn.Module):
         return self.loss_weight * distance
 
 
-
-# class IlluSmoothLoss(nn.Module):
-    # def __init__(self, loss_weight=1):
-    #     super().__init__()
-    #     self.loss_weight = loss_weight
-
-    # def forward(self,x):
-    #     print(x.shape)
-    #     # batch_size = x.size()[0]
-    #     # h_x = x.size()[2]
-    #     # w_x = x.size()[3]
-    #     # count_h =  (x.size()[2]-1) * x.size()[3]
-    #     # count_w = x.size()[2] * (x.size()[3] - 1)
-    #     h_tv = (x[:,:,1:,:]-x[:,:,:-1,:])
-    #     w_tv = (x[:,:,:,1:]-x[:,:,:,:-1])
-
-    #     h_tv = h_tv.abs()
-    #     w_tv = w_tv.abs()
-
-    #     # h_tv = h_tv.sum()
-    #     # w_tv = w_tv.sum()
-
-    #     print(h_tv.shape, w_tv.shape)
-
-    #     l_tv = torch.pow((h_tv+w_tv), 2).sum()
-    #     l_tv = torch.mean(l_tv)
-
-    #     print(l_tv)
-        
-    #     return self.loss_weight * l_tv
-
 class IlluSmoothLoss(nn.Module):
     def __init__(self,loss_weight=1):
         super().__init__()
@@ -186,3 +156,26 @@ class L1Loss(nn.Module):
                 weights. Default: None.
         """
         return self.loss_weight * self.l1_loss(pred, target)
+
+
+class StudentLoss(nn.Module):
+    def __init__(self, teacher_weight, loss_weight=1.0):
+        super().__init__()
+
+        self.loss_weight = loss_weight
+
+        self.l1_loss = nn.L1Loss(reduction="mean")
+
+        self.teacher_model = LEDCurveNet()
+        if teacher_weight:
+            checkpoint = torch.load(teacher_weight)['params']
+            self.teacher_model.load_state_dict(checkpoint)
+
+    def forward(self, x, pred):
+        with torch.no_grad():
+            self.teacher_model.eval()
+            gt_features, _ = self.teacher_model(x.detach())
+
+        loss = self.l1_loss(pred, gt_features)
+
+        return self.loss_weight * loss

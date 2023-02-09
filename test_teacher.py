@@ -35,7 +35,7 @@ config = {
     "dir_info": {
         "train_dir": ("train/hdr", "*01_0.1s_3200.jpg"),
         "valid_dir": ("test/data", "*01_0.1s_3200.jpg"),
-        "test_dir": ("test/hdr", "*01_0.1s_3200.jpg"),
+        "test_dir": ("test/data", "*01_0.1s_400.jpg"),
     },
     "log_dir": "./tb_logs",
     "train_batch": 1,

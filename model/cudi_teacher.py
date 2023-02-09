@@ -33,16 +33,15 @@ class TeacherModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, image_name = batch
-        x_map = get_random_expmap(x, patch_size=16)
-
-        x_concat = torch.cat((x, x_map), dim=1)
+        x_map = x.clone().detach()[:, 2:3, :, :]
+        
         
         l_total = 0
         losses = OrderedDict()
         
         # Forward
-        res, r = self.model(x_concat)
-        
+        res, r = self.model(x)
+
         # Losses
         l_sec = self.cri_sec(res, x_map)
         l_total += l_sec
@@ -70,16 +69,13 @@ class TeacherModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, image_names = batch
-        x_map = get_expmap(x)
-        x_concat = torch.cat((x, x_map), dim=1)
-        res, r = self.model(x_concat)
-        res_map = get_expmap(res)
+        res, r = self.model(x)
 
-        return {"res": res, "res_map": res_map, "image_names": image_names}
+        return {"res": res, "image_names": image_names}
 
     def validation_epoch_end(self, outputs):
         for output in outputs:
-            for res, res_map, image_name in zip(output["res"], output["res_map"], output["image_names"]):
+            for res, image_name in zip(output["res"], output["image_names"]):
                 # u_name = f'{self.current_epoch}/{image_name}_res_map.png'
                 # u_path = os.path.join(self.save_path, u_name)
                 # save_images(res_map, u_path)
@@ -103,9 +99,7 @@ class TeacherModel(pl.LightningModule):
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         x, image_name = batch
         image_name = image_name[0].split('\\')[-1].split('.')[0]
-        x_map = get_expmap(x, s=0.25)
-        x_concat = torch.cat((x, x_map), dim=1)
-        res, _ = self.model(x_concat)
+        res, _ = self.model(x)
 
         u_name = f'{self.current_epoch}/{image_name}_inference.png'
         u_path = os.path.join(self.save_path, u_name)
