@@ -22,7 +22,7 @@ args = parser.parse_args()
 date_name = time.strftime('%Y%m%d-%H%M')
 if args.e:
     date_name += f"_{args.e}"
-image_path = f"/mnt/nas/sjp/cudi-inference/cudi_{date_name}"
+image_path = f"./cudi-inference/cudi_{date_name}"
 os.makedirs(image_path, exist_ok=True)
 
 
