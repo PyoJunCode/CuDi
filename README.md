@@ -33,7 +33,7 @@ use `-t` argument to test inference time only.
 Modify `config` in train_student.py
 
 ```
-python3 test_student.py <model_ckpt_path>
+python3 test_student.py <model_ckpt_path> -e <exp_name>
 ```
 
 
