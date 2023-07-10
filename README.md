@@ -1,6 +1,7 @@
 # CuDi
 
 
+Pytorch Lightning implementation of [CuDi](https://arxiv.org/pdf/2207.14273.pdf) Paper.
 
 ## Train
 
